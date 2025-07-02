@@ -70,7 +70,7 @@ def main():
         response_dir = Path(__file__).parent.parent / 'clickup_api_response'
         response_dir.mkdir(exist_ok=True)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_file = response_dir / f'get_custom_fields_{timestamp}.json'
+        output_file = response_dir / f'get_workspace_custom_fields_{timestamp}.json'
         with open(output_file, 'w') as f:
             json.dump(fields, f, indent=2)
         logger.info(f"Custom fields data saved to {output_file}")
