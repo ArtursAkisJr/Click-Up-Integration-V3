@@ -13,4 +13,7 @@ env_real.env
 Thumbs.db
 
 # Ignore virtual environment files
-.venv/ 
+.venv/
+
+# Ignore clickup_api_response files
+clickup_api_response/ 
