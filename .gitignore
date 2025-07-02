@@ -10,4 +10,7 @@ env_real.env
 
 # Ignore OS files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Ignore virtual environment files
+.venv/ 
