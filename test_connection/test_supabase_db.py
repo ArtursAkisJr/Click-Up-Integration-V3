@@ -1,9 +1,10 @@
 import os
 import psycopg2
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables
-load_dotenv(dotenv_path='../env_real.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent / 'env_real.env',override=True)
 
 SUPABASE_DB_USER = os.getenv('SUPABASE_DB_USER')
 SUPABASE_DB_PASSWORD = os.getenv('SUPABASE_DB_PASSWORD')

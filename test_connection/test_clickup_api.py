@@ -1,9 +1,10 @@
 import os
 import requests
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables
-load_dotenv(dotenv_path='../env_real.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent / 'env_real.env',override=True)
 
 CLICKUP_API_KEY = os.getenv('CLICKUP_API_KEY')
 CLICKUP_TEAM_ID = os.getenv('CLICKUP_TEAM_ID')
