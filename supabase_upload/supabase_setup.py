@@ -61,7 +61,32 @@ def create_tables():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS clickup.lists (
             id TEXT PRIMARY KEY,
-            name TEXT
+            name TEXT,
+            orderindex INTEGER,
+            content TEXT,
+            status JSONB,
+            priority JSONB,
+            assignee JSONB,
+            task_count INTEGER,
+            due_date TEXT,
+            start_date TEXT,
+            folder_id TEXT REFERENCES clickup.folders(id),
+            space_id BIGINT REFERENCES clickup.spaces(id),
+            space_name TEXT,
+            archived BOOLEAN,
+            override_statuses BOOLEAN,
+            permission_level TEXT,
+            statuses JSONB,
+            template_id TEXT,
+            public BOOLEAN,
+            drop_down TEXT,
+            created_at TEXT,
+            updated_at TEXT,
+            icon TEXT,
+            list_type TEXT,
+            custom_fields JSONB,
+            sync_status_id INTEGER REFERENCES clickup.sync_status(id),
+            sync_status_timestamp TIMESTAMP
         )
     ''')
     cur.execute('''
