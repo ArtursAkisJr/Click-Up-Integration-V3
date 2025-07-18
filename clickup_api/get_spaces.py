@@ -12,7 +12,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(sys.stdout)
+        logging.StreamHandler(sys.stderr)
     ]
 )
 logger = logging.getLogger(__name__)
@@ -58,13 +58,6 @@ def main():
     try:
         spaces_client = ClickUpSpaces()
         spaces = spaces_client.get_spaces()
-        print("\nClickUp Spaces:")
-        print("-" * 80)
-        for space in spaces:
-            print(f"ID: {space.get('id')}")
-            print(f"Name: {space.get('name')}")
-            print(f"Private: {space.get('private')}")
-            print("-" * 80)
         # Save to JSON file in clickup_api_response
         response_dir = Path(__file__).parent.parent / 'clickup_api_response'
         response_dir.mkdir(exist_ok=True)
@@ -73,6 +66,8 @@ def main():
         with open(output_file, 'w') as f:
             json.dump(spaces, f, indent=2)
         logger.info(f"Spaces data saved to {output_file}")
+        # Print pure JSON to stdout
+        print(json.dumps(spaces))
     except Exception as e:
         logger.error(f"Error in main: {str(e)}")
         sys.exit(1)

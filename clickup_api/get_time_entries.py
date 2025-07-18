@@ -13,7 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(sys.stdout)
+        logging.StreamHandler(sys.stderr)
     ]
 )
 logger = logging.getLogger(__name__)
@@ -87,6 +87,8 @@ def main():
         with open(output_file, 'w') as f:
             json.dump(entries, f, indent=2)
         logger.info(f"Time entries data saved to {output_file}")
+        # Print pure JSON to stdout
+        print(json.dumps(entries))
     except Exception as e:
         logger.error(f"Error in main: {str(e)}")
         sys.exit(1)
