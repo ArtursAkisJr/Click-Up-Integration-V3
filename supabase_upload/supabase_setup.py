@@ -58,6 +58,60 @@ def create_tables():
             sync_status_timestamp TIMESTAMP
         )
     ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS clickup.lists (
+            id TEXT PRIMARY KEY,
+            name TEXT
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS clickup.folders (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            orderindex INTEGER NOT NULL,
+            override_statuses BOOLEAN NOT NULL,
+            hidden BOOLEAN NOT NULL,
+            space_id BIGINT NOT NULL REFERENCES clickup.spaces(id),
+            space_name TEXT,
+            task_count INTEGER,
+            lists TEXT[] NOT NULL,
+            sync_status_id INTEGER REFERENCES clickup.sync_status(id),
+            sync_status_timestamp TIMESTAMP
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS clickup.time_entries (
+            id BIGINT PRIMARY KEY,
+            user_id BIGINT REFERENCES clickup.team_members(id),
+            task_id TEXT,
+            billable BOOLEAN,
+            start_time BIGINT,
+            end_time BIGINT,
+            duration BIGINT,
+            duration_hours FLOAT,
+            start_datetime TIMESTAMP,
+            end_datetime TIMESTAMP,
+            description TEXT,
+            source TEXT,
+            at BIGINT,
+            is_locked BOOLEAN,
+            approval_id TEXT,
+            task_url TEXT,
+            task_name TEXT,
+            task_status TEXT,
+            task_status_type TEXT,
+            task_status_color TEXT,
+            task_status_orderindex INTEGER,
+            task_custom_type INTEGER,
+            list_id TEXT REFERENCES clickup.lists(id),
+            folder_id TEXT REFERENCES clickup.folders(id),
+            space_id BIGINT REFERENCES clickup.spaces(id),
+            wid TEXT,
+            tags JSONB,
+            sync_status_id INTEGER REFERENCES clickup.sync_status(id),
+            sync_status_timestamp TIMESTAMP
+        )
+    ''')
     conn.commit()
     cur.close()
     conn.close()
