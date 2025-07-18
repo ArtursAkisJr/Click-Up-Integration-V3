@@ -45,6 +45,19 @@ def create_tables():
             error_message TEXT
         )
     ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS clickup.team_members (
+            id BIGINT PRIMARY KEY,
+            username TEXT,
+            email TEXT,
+            color TEXT,
+            profile_picture TEXT,
+            initials TEXT,
+            role TEXT,
+            sync_status_id INTEGER REFERENCES clickup.sync_status(id),
+            sync_status_timestamp TIMESTAMP
+        )
+    ''')
     conn.commit()
     cur.close()
     conn.close()
