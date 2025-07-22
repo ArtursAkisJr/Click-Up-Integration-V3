@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 import logging
 import json
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,6 +20,15 @@ SUPABASE_DB_PORT = os.getenv('SUPABASE_DB_PORT')
 SUPABASE_DB_NAME = os.getenv('SUPABASE_DB_NAME')
 
 BATCH_SIZE = 500
+
+def parse_unix_ms_to_datetime(val):
+    try:
+        if val is None or val == '' or int(val) == 0:
+            return None
+        # Accept both string and int
+        return datetime.utcfromtimestamp(int(val) / 1000)
+    except Exception:
+        return None
 
 def upload_tasks_to_supabase(tasks, sync_status_id, sync_status_timestamp):
     try:
@@ -45,11 +55,11 @@ def upload_tasks_to_supabase(tasks, sync_status_id, sync_status_timestamp):
                 task.get('priority'),
                 task.get('assignees'),
                 task.get('creator'),
-                task.get('due_date'),
-                task.get('start_date'),
-                task.get('date_created'),
-                task.get('date_updated'),
-                task.get('date_closed'),
+                parse_unix_ms_to_datetime(task.get('due_date')),
+                parse_unix_ms_to_datetime(task.get('start_date')),
+                parse_unix_ms_to_datetime(task.get('date_created')),
+                parse_unix_ms_to_datetime(task.get('date_updated')),
+                parse_unix_ms_to_datetime(task.get('date_closed')),
                 task.get('closed'),
                 task.get('archived'),
                 task.get('url'),

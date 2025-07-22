@@ -52,7 +52,12 @@ def fetch_tasks_for_list(list_id, list_name):
     page = 0
     limit = 100
     while True:
-        params = {'page': page, 'limit': limit}
+        params = {
+            'page': page,
+            'limit': limit,
+            'subtasks': 'true',         # Include subtasks
+            'include_closed': 'true'    # Include closed tasks
+        }
         try:
             response = requests.get(url, headers=headers, params=params)
             response.raise_for_status()

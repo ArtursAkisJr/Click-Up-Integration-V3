@@ -37,7 +37,7 @@ def upload_time_entries_to_supabase(time_entries, sync_status_id, sync_status_ti
         for entry in time_entries:
             tags_json = json.dumps(entry.get('tags', [])) if entry.get('tags') is not None else None
             records.append((
-                entry.get('id'),
+                entry.get('id'),  # clickup_time_entry_id
                 entry.get('user', {}).get('id'),
                 entry.get('task', {}).get('id'),
                 entry.get('billable'),
@@ -70,7 +70,7 @@ def upload_time_entries_to_supabase(time_entries, sync_status_id, sync_status_ti
         # Batch insert
         insert_sql = '''
             INSERT INTO clickup.time_entries (
-                id, user_id, task_id, billable, start_time, end_time, duration, duration_hours, start_datetime, end_datetime,
+                clickup_time_entry_id, user_id, task_id, billable, start_time, end_time, duration, duration_hours, start_datetime, end_datetime,
                 description, source, at, is_locked, approval_id, task_url, task_name, task_status, task_status_type, task_status_color,
                 task_status_orderindex, task_custom_type, list_id, folder_id, space_id, wid, tags, sync_status_id, sync_status_timestamp
             ) VALUES %s

@@ -20,9 +20,9 @@ def create_tables():
         port=SUPABASE_DB_PORT
     )
     cur = conn.cursor()
-    # Create schema if not exists
-    cur.execute('CREATE SCHEMA IF NOT EXISTS clickup')
-
+    # Drop and recreate schema for a clean slate
+    cur.execute('DROP SCHEMA IF EXISTS clickup CASCADE')
+    cur.execute('CREATE SCHEMA clickup')
     # 1. Create tables WITHOUT foreign keys
     cur.execute('''
         CREATE TABLE IF NOT EXISTS clickup.sync_status (
@@ -108,7 +108,8 @@ def create_tables():
     ''')
     cur.execute('''
         CREATE TABLE IF NOT EXISTS clickup.time_entries (
-            id BIGINT PRIMARY KEY,
+            timesheet_id SERIAL PRIMARY KEY,
+            clickup_time_entry_id TEXT,
             user_id BIGINT,
             task_id TEXT,
             billable BOOLEAN,
@@ -148,11 +149,11 @@ def create_tables():
             priority TEXT,
             assignees JSONB,
             creator TEXT,
-            due_date TEXT,
-            start_date TEXT,
-            date_created TEXT,
-            date_updated TEXT,
-            date_closed TEXT,
+            due_date TIMESTAMP,
+            start_date TIMESTAMP,
+            date_created TIMESTAMP,
+            date_updated TIMESTAMP,
+            date_closed TIMESTAMP,
             closed BOOLEAN,
             archived BOOLEAN,
             url TEXT,
@@ -277,22 +278,16 @@ def create_tables():
     # time_entries
     cur.execute('''
         ALTER TABLE clickup.time_entries
-        ADD CONSTRAINT fk_time_entries_user_id
-        FOREIGN KEY (user_id) REFERENCES clickup.team_members(id),
-        ADD CONSTRAINT fk_time_entries_list_id
-        FOREIGN KEY (list_id) REFERENCES clickup.lists(id),
-        ADD CONSTRAINT fk_time_entries_folder_id
-        FOREIGN KEY (folder_id) REFERENCES clickup.folders(id),
-        ADD CONSTRAINT fk_time_entries_space_id
-        FOREIGN KEY (space_id) REFERENCES clickup.spaces(id),
-        ADD CONSTRAINT fk_time_entries_sync_status
-        FOREIGN KEY (sync_status_id) REFERENCES clickup.sync_status(id)
+        ADD CONSTRAINT fk_time_entries_user_id FOREIGN KEY (user_id) REFERENCES clickup.team_members(id),
+        ADD CONSTRAINT fk_time_entries_task_id FOREIGN KEY (task_id) REFERENCES clickup.tasks(id),
+        ADD CONSTRAINT fk_time_entries_list_id FOREIGN KEY (list_id) REFERENCES clickup.lists(id),
+        ADD CONSTRAINT fk_time_entries_space_id FOREIGN KEY (space_id) REFERENCES clickup.spaces(id),
+        ADD CONSTRAINT fk_time_entries_sync_status FOREIGN KEY (sync_status_id) REFERENCES clickup.sync_status(id)
     ''')
-    # Add foreign keys for tasks
+    # Add foreign keys for tasks (remove folder_id FK)
     cur.execute('''
         ALTER TABLE clickup.tasks
         ADD CONSTRAINT fk_tasks_list_id FOREIGN KEY (list_id) REFERENCES clickup.lists(id),
-        ADD CONSTRAINT fk_tasks_folder_id FOREIGN KEY (folder_id) REFERENCES clickup.folders(id),
         ADD CONSTRAINT fk_tasks_space_id FOREIGN KEY (space_id) REFERENCES clickup.spaces(id),
         ADD CONSTRAINT fk_tasks_sync_status FOREIGN KEY (sync_status_id) REFERENCES clickup.sync_status(id)
     ''')
