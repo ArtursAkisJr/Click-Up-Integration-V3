@@ -5,6 +5,7 @@ import subprocess
 from datetime import datetime, date, timedelta, timezone
 import logging
 from supabase_upload.time_entries_upload import upload_time_entries_to_supabase
+from supabase_upload.cleanup_duplicate_time_entries import cleanup_duplicate_time_entries
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -70,6 +71,10 @@ def transform_time_entry(entry):
 
 def main():
     try:
+        # First, clean up any existing duplicates
+        logger.info("Cleaning up existing duplicate time entries...")
+        cleanup_duplicate_time_entries()
+        
         user_ids = get_all_user_ids()
         year = datetime.now().year
         start_date = date(year, 1, 1)

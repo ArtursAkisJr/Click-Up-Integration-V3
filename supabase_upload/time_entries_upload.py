@@ -30,11 +30,19 @@ def upload_time_entries_to_supabase(time_entries, sync_status_id, sync_status_ti
             port=SUPABASE_DB_PORT
         )
         cur = conn.cursor()
-        # Delete all previous records
-        cur.execute('DELETE FROM clickup.time_entries')
+        
+        # Deduplicate time entries by clickup_time_entry_id
+        unique_entries = {}
+        for entry in time_entries:
+            entry_id = entry.get('id')
+            if entry_id:
+                unique_entries[entry_id] = entry
+        
+        logger.info(f"Original entries: {len(time_entries)}, Unique entries: {len(unique_entries)}")
+        
         # Prepare data for batch insert
         records = []
-        for entry in time_entries:
+        for entry in unique_entries.values():
             tags_json = json.dumps(entry.get('tags', [])) if entry.get('tags') is not None else None
             records.append((
                 entry.get('id'),  # clickup_time_entry_id
@@ -67,21 +75,53 @@ def upload_time_entries_to_supabase(time_entries, sync_status_id, sync_status_ti
                 sync_status_id,
                 sync_status_timestamp
             ))
-        # Batch insert
+        
+        # Batch insert with conflict handling
         insert_sql = '''
             INSERT INTO clickup.time_entries (
                 clickup_time_entry_id, user_id, task_id, billable, start_time, end_time, duration, duration_hours, start_datetime, end_datetime,
                 description, source, at, is_locked, approval_id, task_url, task_name, task_status, task_status_type, task_status_color,
                 task_status_orderindex, task_custom_type, list_id, folder_id, space_id, wid, tags, sync_status_id, sync_status_timestamp
             ) VALUES %s
+            ON CONFLICT (clickup_time_entry_id) DO UPDATE SET
+                user_id = EXCLUDED.user_id,
+                task_id = EXCLUDED.task_id,
+                billable = EXCLUDED.billable,
+                start_time = EXCLUDED.start_time,
+                end_time = EXCLUDED.end_time,
+                duration = EXCLUDED.duration,
+                duration_hours = EXCLUDED.duration_hours,
+                start_datetime = EXCLUDED.start_datetime,
+                end_datetime = EXCLUDED.end_datetime,
+                description = EXCLUDED.description,
+                source = EXCLUDED.source,
+                at = EXCLUDED.at,
+                is_locked = EXCLUDED.is_locked,
+                approval_id = EXCLUDED.approval_id,
+                task_url = EXCLUDED.task_url,
+                task_name = EXCLUDED.task_name,
+                task_status = EXCLUDED.task_status,
+                task_status_type = EXCLUDED.task_status_type,
+                task_status_color = EXCLUDED.task_status_color,
+                task_status_orderindex = EXCLUDED.task_status_orderindex,
+                task_custom_type = EXCLUDED.task_custom_type,
+                list_id = EXCLUDED.list_id,
+                folder_id = EXCLUDED.folder_id,
+                space_id = EXCLUDED.space_id,
+                wid = EXCLUDED.wid,
+                tags = EXCLUDED.tags,
+                sync_status_id = EXCLUDED.sync_status_id,
+                sync_status_timestamp = EXCLUDED.sync_status_timestamp
         '''
+        
         for i in range(0, len(records), BATCH_SIZE):
             batch = records[i:i+BATCH_SIZE]
             execute_values(cur, insert_sql, batch)
+        
         conn.commit()
         cur.close()
         conn.close()
-        logger.info(f"Uploaded {len(time_entries)} time entries to Supabase in batches of {BATCH_SIZE}.")
+        logger.info(f"Uploaded {len(unique_entries)} unique time entries to Supabase in batches of {BATCH_SIZE}.")
     except Exception as e:
         logger.error(f"Error uploading time entries to Supabase: {e}")
         raise 

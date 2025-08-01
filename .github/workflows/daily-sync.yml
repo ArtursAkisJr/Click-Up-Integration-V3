@@ -39,6 +39,10 @@ jobs:
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
+      - name: Apply Latvia National Holidays
+        run: |
+          psql "postgresql://$SUPABASE_DB_USER:$SUPABASE_DB_PASSWORD@$SUPABASE_DB_HOST:$SUPABASE_DB_PORT/$SUPABASE_DB_NAME" -f futurcene_dashboard_v1/timesheet_report/latvia_national_holidays_2025.sql
+
       - name: Apply PowerBI views SQL
         run: |
           psql "postgresql://$SUPABASE_DB_USER:$SUPABASE_DB_PASSWORD@$SUPABASE_DB_HOST:$SUPABASE_DB_PORT/$SUPABASE_DB_NAME" -f futurcene_dashboard_v1/timesheet_report/create_powerbi_views.sql 

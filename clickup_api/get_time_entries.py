@@ -42,6 +42,7 @@ class ClickUpTimeEntries:
         if end_date:
             params['end_date'] = int(end_date.timestamp() * 1000)
         all_entries = []
+        seen_entry_ids = set()
         page = 0
         max_pages = 50
         while page < max_pages:
@@ -54,13 +55,22 @@ class ClickUpTimeEntries:
                 entries = data.get('data', [])
                 if not entries:
                     break
-                all_entries.extend(entries)
+                
+                # Deduplicate entries by ID
+                for entry in entries:
+                    entry_id = entry.get('id')
+                    if entry_id and entry_id not in seen_entry_ids:
+                        seen_entry_ids.add(entry_id)
+                        all_entries.append(entry)
+                
                 if len(entries) < 100:
                     break
                 page += 1
             except Exception as e:
                 logger.error(f"Failed to fetch time entries, page {page + 1}: {str(e)}")
                 break
+        
+        logger.info(f"Fetched {len(all_entries)} unique time entries from {len(seen_entry_ids)} total entries seen")
         return all_entries
 
 def main():
