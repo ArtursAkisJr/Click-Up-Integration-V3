@@ -15,6 +15,7 @@ jobs:
       SUPABASE_DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
       SUPABASE_DB_NAME: ${{ secrets.SUPABASE_DB_NAME }}
       CLICKUP_API_KEY: ${{ secrets.CLICKUP_API_KEY }}
+      CLICKUP_TEAM_ID: ${{ secrets.CLICKUP_TEAM_ID }}
       # Add any other env vars needed
     steps:
       - name: Checkout code
@@ -30,19 +31,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Supabase setup
+      - name: Run Supabase setup (includes views and national holidays)
         run: python supabase_upload/supabase_setup.py
 
-      - name: Run full sync
-        run: python sync_scripts/sync_all.py
-
-      - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: Apply Latvia National Holidays
-        run: |
-          psql "postgresql://$SUPABASE_DB_USER:$SUPABASE_DB_PASSWORD@$SUPABASE_DB_HOST:$SUPABASE_DB_PORT/$SUPABASE_DB_NAME" -f futurcene_dashboard_v1/timesheet_report/latvia_national_holidays_2025.sql
-
-      - name: Apply PowerBI views SQL
-        run: |
-          psql "postgresql://$SUPABASE_DB_USER:$SUPABASE_DB_PASSWORD@$SUPABASE_DB_HOST:$SUPABASE_DB_PORT/$SUPABASE_DB_NAME" -f futurcene_dashboard_v1/timesheet_report/create_powerbi_views.sql 
+      - name: Run full sync (spaces, team members, folders, lists, tasks, time entries)
+        run: python sync_scripts/sync_all.py 
