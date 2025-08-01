@@ -1,0 +1,29 @@
+# ClickUp Backend V3 - Requirements
+# Core dependencies for ClickUp API integration and Supabase database operations
+
+# Database connectivity
+# Note: For Windows users, if psycopg2-binary fails, try: pip install psycopg2
+psycopg2-binary>=2.9.5
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# HTTP requests for API calls
+requests>=2.31.0
+
+# Additional utilities that might be needed
+# These are commonly used with the above packages
+urllib3>=2.0.7
+certifi>=2023.11.17
+charset-normalizer>=3.3.2
+idna>=3.6
+
+# Built-in modules used in the project (for reference):
+# - datetime
+# - json
+# - pathlib
+# - logging
+# - subprocess
+# - argparse
+# - sys
+# - os 
