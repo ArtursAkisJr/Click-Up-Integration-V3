@@ -30,8 +30,7 @@ def upload_folders_to_supabase(folders, sync_status_id, sync_status_timestamp):
             port=SUPABASE_DB_PORT
         )
         cur = conn.cursor()
-        # Delete all previous records
-        cur.execute('DELETE FROM clickup.folders')
+        # Use UPSERT (ON CONFLICT) instead of DELETE + INSERT to avoid foreign key issues
         # Prepare data for batch insert
         records = []
         for folder in folders:
@@ -48,15 +47,27 @@ def upload_folders_to_supabase(folders, sync_status_id, sync_status_timestamp):
                 sync_status_id,
                 sync_status_timestamp
             ))
-        # Batch insert
+        # Batch insert with UPSERT
         insert_sql = '''
             INSERT INTO clickup.folders (
                 id, name, orderindex, override_statuses, hidden, space_id, space_name, task_count, lists, sync_status_id, sync_status_timestamp
             ) VALUES %s
+            ON CONFLICT (id) DO UPDATE SET
+                name = EXCLUDED.name,
+                orderindex = EXCLUDED.orderindex,
+                override_statuses = EXCLUDED.override_statuses,
+                hidden = EXCLUDED.hidden,
+                space_id = EXCLUDED.space_id,
+                space_name = EXCLUDED.space_name,
+                task_count = EXCLUDED.task_count,
+                lists = EXCLUDED.lists,
+                sync_status_id = EXCLUDED.sync_status_id,
+                sync_status_timestamp = EXCLUDED.sync_status_timestamp
         '''
         for i in range(0, len(records), BATCH_SIZE):
             batch = records[i:i+BATCH_SIZE]
             execute_values(cur, insert_sql, batch)
+        # Note: We don't delete orphaned folders here to avoid foreign key constraint issues
         conn.commit()
         cur.close()
         conn.close()

@@ -28,13 +28,21 @@ def upload_spaces_to_supabase(spaces, sync_status_id, sync_status_timestamp):
             port=SUPABASE_DB_PORT
         )
         cur = conn.cursor()
-        # Delete all previous records
-        cur.execute('DELETE FROM clickup.spaces')
-        # Insert new records
+        # Use UPSERT (ON CONFLICT) instead of DELETE + INSERT to avoid foreign key issues
+        # This will update existing spaces and insert new ones
         for space in spaces:
             cur.execute('''
                 INSERT INTO clickup.spaces (id, name, private, status, color, avatar, archived, sync_status_id, sync_status_timestamp)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    private = EXCLUDED.private,
+                    status = EXCLUDED.status,
+                    color = EXCLUDED.color,
+                    avatar = EXCLUDED.avatar,
+                    archived = EXCLUDED.archived,
+                    sync_status_id = EXCLUDED.sync_status_id,
+                    sync_status_timestamp = EXCLUDED.sync_status_timestamp
             ''', (
                 space.get('id'),
                 space.get('name'),
@@ -46,6 +54,8 @@ def upload_spaces_to_supabase(spaces, sync_status_id, sync_status_timestamp):
                 sync_status_id,
                 sync_status_timestamp
             ))
+        # Note: We don't delete orphaned spaces here to avoid foreign key constraint issues
+        # Orphaned spaces will be handled separately if needed, after dependent tables are synced
         conn.commit()
         cur.close()
         conn.close()

@@ -30,8 +30,7 @@ def upload_lists_to_supabase(lists, sync_status_id, sync_status_timestamp):
             port=SUPABASE_DB_PORT
         )
         cur = conn.cursor()
-        # Delete all previous records
-        cur.execute('DELETE FROM clickup.lists')
+        # Use UPSERT (ON CONFLICT) instead of DELETE + INSERT to avoid foreign key issues
         # Prepare data for batch insert
         records = []
         for lst in lists:
@@ -64,15 +63,43 @@ def upload_lists_to_supabase(lists, sync_status_id, sync_status_timestamp):
                 sync_status_id,
                 sync_status_timestamp
             ))
-        # Batch insert
+        # Batch insert with UPSERT
         insert_sql = '''
             INSERT INTO clickup.lists (
                 id, name, orderindex, content, status, priority, assignee, task_count, due_date, start_date, folder_id, space_id, space_name, archived, override_statuses, permission_level, statuses, template_id, public, drop_down, created_at, updated_at, icon, list_type, custom_fields, sync_status_id, sync_status_timestamp
             ) VALUES %s
+            ON CONFLICT (id) DO UPDATE SET
+                name = EXCLUDED.name,
+                orderindex = EXCLUDED.orderindex,
+                content = EXCLUDED.content,
+                status = EXCLUDED.status,
+                priority = EXCLUDED.priority,
+                assignee = EXCLUDED.assignee,
+                task_count = EXCLUDED.task_count,
+                due_date = EXCLUDED.due_date,
+                start_date = EXCLUDED.start_date,
+                folder_id = EXCLUDED.folder_id,
+                space_id = EXCLUDED.space_id,
+                space_name = EXCLUDED.space_name,
+                archived = EXCLUDED.archived,
+                override_statuses = EXCLUDED.override_statuses,
+                permission_level = EXCLUDED.permission_level,
+                statuses = EXCLUDED.statuses,
+                template_id = EXCLUDED.template_id,
+                public = EXCLUDED.public,
+                drop_down = EXCLUDED.drop_down,
+                created_at = EXCLUDED.created_at,
+                updated_at = EXCLUDED.updated_at,
+                icon = EXCLUDED.icon,
+                list_type = EXCLUDED.list_type,
+                custom_fields = EXCLUDED.custom_fields,
+                sync_status_id = EXCLUDED.sync_status_id,
+                sync_status_timestamp = EXCLUDED.sync_status_timestamp
         '''
         for i in range(0, len(records), BATCH_SIZE):
             batch = records[i:i+BATCH_SIZE]
             execute_values(cur, insert_sql, batch)
+        # Note: We don't delete orphaned lists here to avoid foreign key constraint issues
         conn.commit()
         cur.close()
         conn.close()

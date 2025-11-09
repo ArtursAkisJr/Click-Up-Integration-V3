@@ -26,13 +26,20 @@ def upload_team_members_to_supabase(team_members, sync_status_id, sync_status_ti
             port=SUPABASE_DB_PORT
         )
         cur = conn.cursor()
-        # Delete all previous records
-        cur.execute('DELETE FROM clickup.team_members')
-        # Insert new records
+        # Use UPSERT (ON CONFLICT) instead of DELETE + INSERT to avoid foreign key issues
         for member in team_members:
             cur.execute('''
                 INSERT INTO clickup.team_members (id, username, email, color, profile_picture, initials, role, sync_status_id, sync_status_timestamp)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    username = EXCLUDED.username,
+                    email = EXCLUDED.email,
+                    color = EXCLUDED.color,
+                    profile_picture = EXCLUDED.profile_picture,
+                    initials = EXCLUDED.initials,
+                    role = EXCLUDED.role,
+                    sync_status_id = EXCLUDED.sync_status_id,
+                    sync_status_timestamp = EXCLUDED.sync_status_timestamp
             ''', (
                 member.get('id'),
                 member.get('username'),
@@ -44,6 +51,7 @@ def upload_team_members_to_supabase(team_members, sync_status_id, sync_status_ti
                 sync_status_id,
                 sync_status_timestamp
             ))
+        # Note: We don't delete orphaned team members here to avoid foreign key constraint issues
         conn.commit()
         cur.close()
         conn.close()
