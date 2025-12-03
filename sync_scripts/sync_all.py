@@ -13,6 +13,7 @@ SYNC_ORDER = [
     'sync_lists.py',
     'sync_tasks.py',
     'sync_ytd_time_entries_all_users.py',
+    'sync_latvia_holidays.py',
 ]
 
 SCRIPT_DIR = Path(__file__).parent

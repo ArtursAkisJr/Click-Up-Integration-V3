@@ -139,6 +139,7 @@ python supabase_upload/cleanup_duplicate_time_entries.py
 - `clickup_dim_WIP` - Work in progress dimension
 - `clickup_dim_Calendar` - Date dimension with holidays
 - `clickup_dim_Members` - Team members
+- `clickup_fact_StandardHours` - Standard hours calculation for each user-date combination
 
 ## Automated Workflows
 

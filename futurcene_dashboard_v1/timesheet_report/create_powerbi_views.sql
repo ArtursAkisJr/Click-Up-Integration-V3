@@ -122,4 +122,99 @@ LEFT JOIN clickup.national_holidays nh ON d::date = nh.date;
 
 -- 10. clickup_dim_Members: All columns from team_members for PowerBI
 CREATE OR REPLACE VIEW public.clickup_dim_Members AS
-SELECT * FROM clickup.team_members; 
+SELECT * FROM clickup.team_members;
+
+-- 11. clickup_fact_StandardHours: Standard hours calculation for each user-date combination
+CREATE OR REPLACE VIEW public.clickup_fact_StandardHours AS
+WITH user_join_dates AS (
+    -- Determine each user's join date (earliest time entry)
+    SELECT 
+        user_id,
+        DATE(MIN(start_datetime)) AS join_date
+    FROM clickup.time_entries 
+    WHERE user_id IS NOT NULL AND start_datetime IS NOT NULL
+    GROUP BY user_id
+),
+calendar_with_join_dates AS (
+    -- Generate calendar dates and join user join dates
+    SELECT 
+        c.date_id,
+        c.date,
+        c.year,
+        c.month,
+        c.day,
+        c.is_weekend,
+        c.holiday_name,
+        c.standard_hours AS base_standard_hours,
+        ujd.user_id,
+        ujd.join_date,
+        -- Calculate days in month for the user's join month
+        CASE 
+            WHEN EXTRACT(YEAR FROM c.date) = EXTRACT(YEAR FROM ujd.join_date) 
+                 AND EXTRACT(MONTH FROM c.date) = EXTRACT(MONTH FROM ujd.join_date) THEN
+                -- For the join month, calculate partial days
+                CASE 
+                    WHEN c.date >= ujd.join_date THEN
+                        -- User was active this day in join month
+                        c.base_standard_hours
+                    ELSE 0
+                END
+            ELSE
+                -- For other months, use full standard hours
+                c.base_standard_hours
+        END AS adjusted_standard_hours
+    FROM public.clickup_dim_Calendar c
+    CROSS JOIN user_join_dates ujd
+    WHERE c.date >= ujd.join_date  -- Only include dates after user joined
+),
+monthly_working_days AS (
+    -- Calculate working days per month for each user
+    SELECT 
+        user_id,
+        year,
+        month,
+        COUNT(*) AS working_days_in_month,
+        SUM(adjusted_standard_hours) AS total_standard_hours_in_month
+    FROM calendar_with_join_dates
+    WHERE adjusted_standard_hours > 0
+    GROUP BY user_id, year, month
+)
+SELECT 
+    cwd.date_id,
+    cwd.date,
+    cwd.user_id,
+    cwd.join_date,
+    cwd.adjusted_standard_hours,
+    -- Calculate pro-rated standard hours for partial months
+    CASE 
+        WHEN EXTRACT(YEAR FROM cwd.date) = EXTRACT(YEAR FROM cwd.join_date) 
+             AND EXTRACT(MONTH FROM cwd.date) = EXTRACT(MONTH FROM cwd.join_date) THEN
+            -- For join month, calculate pro-rated hours
+            CASE 
+                WHEN mwd.working_days_in_month > 0 THEN
+                    -- Pro-rate based on working days in the month
+                    (cwd.adjusted_standard_hours * 21.75) / mwd.working_days_in_month
+                ELSE 0
+            END
+        ELSE
+            -- For other months, use standard calculation
+            cwd.adjusted_standard_hours
+    END AS final_standard_hours,
+    mwd.working_days_in_month,
+    mwd.total_standard_hours_in_month,
+    -- Additional metadata
+    EXTRACT(YEAR FROM cwd.date) AS year,
+    EXTRACT(MONTH FROM cwd.date) AS month,
+    EXTRACT(DAY FROM cwd.date) AS day,
+    cwd.is_weekend,
+    cwd.holiday_name,
+    CASE 
+        WHEN cwd.date >= cwd.join_date THEN 'Active'
+        ELSE 'Not Joined'
+    END AS user_status
+FROM calendar_with_join_dates cwd
+LEFT JOIN monthly_working_days mwd ON 
+    cwd.user_id = mwd.user_id AND 
+    EXTRACT(YEAR FROM cwd.date) = mwd.year AND 
+    EXTRACT(MONTH FROM cwd.date) = mwd.month
+WHERE cwd.user_id IS NOT NULL; 
