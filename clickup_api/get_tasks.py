@@ -86,10 +86,16 @@ def flatten_task(task):
         except Exception:
             return None
 
+    status_val = task.get('status')
+    if isinstance(status_val, dict):
+        status_text = status_val.get('status')
+    else:
+        status_text = status_val
+
     flat = {
         'id': task.get('id'),
         'name': task.get('name'),
-        'status': json.dumps(task.get('status')) if task.get('status') is not None else None,
+        'status': status_text,
         'orderindex': safe_int(task.get('orderindex')),
         'priority': json.dumps(task.get('priority')) if task.get('priority') is not None else None,
         'assignees': json.dumps(task.get('assignees')) if task.get('assignees') is not None else None,
