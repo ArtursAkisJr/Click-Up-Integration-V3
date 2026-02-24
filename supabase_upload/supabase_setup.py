@@ -434,7 +434,7 @@ def create_tables():
             nh.name AS holiday_name,
             CASE WHEN nh.date IS NOT NULL OR EXTRACT(DOW FROM d) IN (0,6) THEN 0 ELSE 8 END AS standard_hours,
             CASE WHEN nh.date IS NOT NULL OR EXTRACT(DOW FROM d) IN (0,6) THEN 0 ELSE 8 END AS working_hours
-        FROM generate_series('2025-01-01'::date, '2025-12-31'::date, interval '1 day') d
+        FROM generate_series('2025-01-01'::date, '2026-12-31'::date, interval '1 day') d
         LEFT JOIN clickup.national_holidays nh ON d::date = nh.date
     ''')
     
