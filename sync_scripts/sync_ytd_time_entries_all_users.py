@@ -6,7 +6,6 @@ from datetime import datetime, date, timedelta, timezone
 import logging
 from supabase_upload.time_entries_upload import upload_time_entries_to_supabase
 from supabase_upload.cleanup_duplicate_time_entries import cleanup_duplicate_time_entries
-from sync_scripts.incremental_helper import get_last_successful_sync_time
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -78,17 +77,8 @@ def main():
         
         user_ids = get_all_user_ids()
         year = datetime.now().year
-
-        last_sync = get_last_successful_sync_time('time_entries')
-        if last_sync:
-            # 1-hour overlap buffer to avoid missing entries near the sync boundary
-            start_date = (last_sync - timedelta(hours=1)).date()
-            logger.info(f"Incremental time entries sync: fetching entries from {start_date} (last sync: {last_sync})")
-        else:
-            start_date = date(year, 1, 1)
-            logger.info("No previous successful sync found — performing full YTD time entries sync")
-
-        end_date = date.today()
+        start_date = date(year, 1, 1)
+        end_date = date(year, 12, 31)
         # Run get_time_entries.py and capture its output
         result = subprocess.run(
             [sys.executable, str(Path(__file__).parent.parent / 'clickup_api' / 'get_time_entries.py'),

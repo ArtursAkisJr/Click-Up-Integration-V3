@@ -5,7 +5,6 @@ import subprocess
 from datetime import datetime
 import logging
 from supabase_upload.lists_upload import upload_lists_to_supabase
-from sync_scripts.incremental_helper import get_last_successful_sync_time
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -60,24 +59,10 @@ def main():
         folder_lists = run_and_load_json(str(Path(__file__).parent.parent / 'clickup_api' / 'get_lists_folder.py'))
         all_lists = folderless_lists + folder_lists
         print(f"Fetched {len(all_lists)} lists (folderless + foldered).")
-
-        last_sync = get_last_successful_sync_time('lists')
-        if last_sync:
-            # ClickUp returns updated_at as a Unix ms timestamp string
-            last_sync_ms = int(last_sync.timestamp() * 1000)
-            changed_lists = [
-                lst for lst in all_lists
-                if not lst.get('updated_at') or int(lst['updated_at']) > last_sync_ms
-            ]
-            logger.info(f"Incremental lists sync: {len(changed_lists)}/{len(all_lists)} lists changed since {last_sync}")
-        else:
-            changed_lists = all_lists
-            logger.info(f"Full lists sync: {len(all_lists)} lists")
-
         # Insert sync status first
-        sync_status_id, sync_status_timestamp = update_sync_status('lists', 'SUCCESS', len(changed_lists))
+        sync_status_id, sync_status_timestamp = update_sync_status('lists', 'SUCCESS', len(all_lists))
         # Upload to Supabase with sync_status_id and timestamp
-        upload_lists_to_supabase(changed_lists, sync_status_id, sync_status_timestamp)
+        upload_lists_to_supabase(all_lists, sync_status_id, sync_status_timestamp)
         logger.info('Lists sync completed successfully.')
     except Exception as e:
         update_sync_status('lists', 'ERROR', 0, str(e))

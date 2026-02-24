@@ -2,10 +2,9 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 from supabase_upload.tasks_upload import upload_tasks_to_supabase
-from sync_scripts.incremental_helper import get_last_successful_sync_time
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -43,21 +42,9 @@ def update_sync_status(table_name, status, records_processed, error_message=None
 
 def main():
     try:
-        cmd = [sys.executable, str(Path(__file__).parent.parent / 'clickup_api' / 'get_tasks.py')]
-
-        last_sync = get_last_successful_sync_time('tasks')
-        if last_sync:
-            # 5-minute overlap buffer to avoid missing tasks updated near the boundary
-            cutoff = last_sync - timedelta(minutes=5)
-            date_updated_gt = int(cutoff.timestamp() * 1000)
-            cmd += ['--date_updated_gt', str(date_updated_gt)]
-            logger.info(f"Incremental task sync: fetching tasks updated after {cutoff} (Unix ms: {date_updated_gt})")
-        else:
-            logger.info("No previous successful sync found — performing full task sync")
-
         # Run get_tasks.py and capture its output
         result = subprocess.run(
-            cmd,
+            [sys.executable, str(Path(__file__).parent.parent / 'clickup_api' / 'get_tasks.py')],
             check=True,
             capture_output=True,
             text=True
