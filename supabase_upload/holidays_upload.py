@@ -78,3 +78,10 @@ def upload_latvia_holidays(holidays: list[dict]) -> int:
     return len(rows)
 
 
+
+
+
+
+
+
+
