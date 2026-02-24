@@ -1,4 +1,5 @@
 import os
+import argparse
 import requests
 from dotenv import load_dotenv
 import logging
@@ -42,7 +43,7 @@ def get_all_lists():
     conn.close()
     return lists
 
-def fetch_tasks_for_list(list_id, list_name):
+def fetch_tasks_for_list(list_id, list_name, date_updated_gt=None):
     url = f'https://api.clickup.com/api/v2/list/{list_id}/task'
     headers = {
         'Authorization': CLICKUP_API_KEY,
@@ -58,6 +59,8 @@ def fetch_tasks_for_list(list_id, list_name):
             'subtasks': 'true',         # Include subtasks
             'include_closed': 'true'    # Include closed tasks
         }
+        if date_updated_gt is not None:
+            params['date_updated_gt'] = date_updated_gt
         try:
             response = requests.get(url, headers=headers, params=params)
             response.raise_for_status()
@@ -186,11 +189,16 @@ def flatten_task(task):
     return flat
 
 def main():
+    parser = argparse.ArgumentParser(description='Fetch ClickUp tasks')
+    parser.add_argument('--date_updated_gt', required=False, type=int,
+                        help='Only fetch tasks updated after this Unix ms timestamp (incremental sync)')
+    args = parser.parse_args()
+
     try:
         all_lists = get_all_lists()
         all_tasks = []
         for lst in all_lists:
-            tasks = fetch_tasks_for_list(lst['id'], lst['name'])
+            tasks = fetch_tasks_for_list(lst['id'], lst['name'], date_updated_gt=args.date_updated_gt)
             for task in tasks:
                 flat = flatten_task(task)
                 all_tasks.append(flat)
