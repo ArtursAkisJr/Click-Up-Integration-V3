@@ -583,6 +583,30 @@ def create_tables():
           AND te.billable = FALSE
     ''')
     
+    # 14. clickup_fact_BillableOnNonChargeableCheck: Billable hours logged on non-chargeable projects
+    cur.execute('''
+        CREATE OR REPLACE VIEW public.clickup_fact_BillableOnNonChargeableCheck AS
+        SELECT
+            te.timesheet_id,
+            te.user_id,
+            m.username,
+            m.email,
+            te.task_id,
+            t.name AS task_name,
+            t.status,
+            t.list_id,
+            t.space_id,
+            te.start_datetime,
+            te.end_datetime,
+            te.duration_hours,
+            te.billable
+        FROM clickup.time_entries te
+        JOIN clickup.tasks t ON te.task_id = t.id
+        LEFT JOIN clickup.team_members m ON te.user_id = m.id
+        WHERE t.list_id <> '901510836048'
+          AND te.billable = TRUE
+    ''')
+    
     conn.commit()
     cur.close()
     conn.close()
